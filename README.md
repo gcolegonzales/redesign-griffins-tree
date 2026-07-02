@@ -45,6 +45,18 @@ ships with tasteful on-brand placeholders and will **automatically swap in real 
 moment they're dropped into `assets/photos/` — see `assets/photos/DROP-PHOTOS-HERE.md` for the
 exact filenames.
 
+## SEO / base URL
+
+The site includes on-page SEO: a unique `<title>` + meta description, `LocalBusiness`
+JSON-LD structured data (real name, phone, address, hours, service area), a canonical link,
+complete Open Graph + Twitter Card tags, plus `robots.txt` and `sitemap.xml` at the repo root.
+
+Because the final domain isn't known yet, every absolute URL uses the literal placeholder
+`https://REPLACE-WITH-DOMAIN.com/` — in `index.html` (canonical, `og:url`, `og:image`,
+`twitter:image`, and the JSON-LD `url`/`image`), `robots.txt`, and `sitemap.xml`. **At deploy,
+do a single find-and-replace of `https://REPLACE-WITH-DOMAIN.com/` with the real domain** across
+those files.
+
 ## Notes on data
 
 Business name, address, phone, license #, ratings, service area, and service list are taken from
