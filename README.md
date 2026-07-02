@@ -52,9 +52,9 @@ JSON-LD structured data (real name, phone, address, hours, service area), a cano
 complete Open Graph + Twitter Card tags, plus `robots.txt` and `sitemap.xml` at the repo root.
 
 Because the final domain isn't known yet, every absolute URL uses the literal placeholder
-`https://REPLACE-WITH-DOMAIN.com/` — in `index.html` (canonical, `og:url`, `og:image`,
+`https://griffinstree.com/` — in `index.html` (canonical, `og:url`, `og:image`,
 `twitter:image`, and the JSON-LD `url`/`image`), `robots.txt`, and `sitemap.xml`. **At deploy,
-do a single find-and-replace of `https://REPLACE-WITH-DOMAIN.com/` with the real domain** across
+do a single find-and-replace of `https://griffinstree.com/` with the real domain** across
 those files.
 
 ## Notes on data
