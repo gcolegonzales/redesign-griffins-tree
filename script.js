@@ -5,30 +5,60 @@
   var header = document.getElementById('siteHeader');
   var toggle = document.getElementById('navToggle');
   var mobileMenu = document.getElementById('mobileMenu');
+  var scrim = document.getElementById('navScrim');
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---- Shrink / solidify header on scroll ---- */
+  /* ---- Header: solidify on scroll + hide-on-down / reveal-on-any-up ---- */
   var lastScrolled = null;
+  var lastY = window.scrollY;
   function onScroll() {
-    var scrolled = window.scrollY > 24;
+    var y = window.scrollY;
+
+    var scrolled = y > 24;
     if (scrolled !== lastScrolled) {
       header.classList.toggle('scrolled', scrolled);
       lastScrolled = scrolled;
     }
+
+    // never hide the header while the menu is open
+    var menuOpen = toggle.getAttribute('aria-expanded') === 'true';
+    if (!menuOpen) {
+      if (y > lastY && y > 120) {
+        // scrolling down past the header — hide it
+        header.classList.add('nav-hidden');
+      } else if (y < lastY) {
+        // any upward scroll — reveal immediately
+        header.classList.remove('nav-hidden');
+      }
+    }
+    lastY = y;
   }
   onScroll();
   window.addEventListener('scroll', onScroll, { passive: true });
 
-  /* ---- Mobile menu ---- */
+  /* ---- Mobile menu (animated dropdown + scrim) ---- */
   function closeMenu() {
     toggle.setAttribute('aria-expanded', 'false');
     toggle.setAttribute('aria-label', 'Open menu');
-    mobileMenu.hidden = true;
+    mobileMenu.classList.remove('open');
+    scrim.classList.remove('open');
+    // remove the scrim from the layout after the fade-out
+    window.setTimeout(function () {
+      if (!scrim.classList.contains('open')) scrim.hidden = true;
+    }, 320);
   }
   function openMenu() {
+    header.classList.remove('nav-hidden'); // ensure header is visible
     toggle.setAttribute('aria-expanded', 'true');
     toggle.setAttribute('aria-label', 'Close menu');
-    mobileMenu.hidden = false;
+    scrim.hidden = false;
+    // force layout, then add .open on a timer so the fade-in transition runs
+    // (setTimeout instead of rAF — rAF is throttled when the tab isn't focused)
+    void scrim.offsetWidth;
+    window.setTimeout(function () {
+      mobileMenu.classList.add('open');
+      scrim.classList.add('open');
+    }, 10);
   }
   toggle.addEventListener('click', function () {
     if (toggle.getAttribute('aria-expanded') === 'true') closeMenu();
@@ -37,6 +67,7 @@
   mobileMenu.querySelectorAll('a').forEach(function (a) {
     a.addEventListener('click', closeMenu);
   });
+  scrim.addEventListener('click', closeMenu);
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
       closeMenu();
