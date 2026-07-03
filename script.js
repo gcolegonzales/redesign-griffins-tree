@@ -37,11 +37,36 @@
   window.addEventListener('scroll', onScroll, { passive: true });
 
   /* ---- Mobile menu (animated dropdown + scrim) ---- */
+  var menuLinks = Array.prototype.slice.call(mobileMenu.querySelectorAll('a'));
+  var mainEl = document.getElementById('top');
+
+  // Keep the off-canvas links out of the tab order whenever the drawer is closed.
+  function setMenuFocusable(on) {
+    if (on) {
+      mobileMenu.removeAttribute('inert');
+      mobileMenu.removeAttribute('aria-hidden');
+    } else {
+      mobileMenu.setAttribute('inert', '');
+      mobileMenu.setAttribute('aria-hidden', 'true');
+    }
+  }
+  setMenuFocusable(false); // start closed
+
+  function isOpen() { return toggle.getAttribute('aria-expanded') === 'true'; }
+
   function closeMenu() {
+    if (!isOpen()) return;
     toggle.setAttribute('aria-expanded', 'false');
     toggle.setAttribute('aria-label', 'Open menu');
     mobileMenu.classList.remove('open');
     scrim.classList.remove('open');
+    setMenuFocusable(false);
+    // restore background: scroll + interactivity
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    if (mainEl) mainEl.removeAttribute('inert');
+    // return focus to the toggle so keyboard users aren't stranded
+    if (document.activeElement && mobileMenu.contains(document.activeElement)) toggle.focus();
     // remove the scrim from the layout after the fade-out
     window.setTimeout(function () {
       if (!scrim.classList.contains('open')) scrim.hidden = true;
@@ -52,28 +77,65 @@
     toggle.setAttribute('aria-expanded', 'true');
     toggle.setAttribute('aria-label', 'Close menu');
     scrim.hidden = false;
+    setMenuFocusable(true);
+    // lock background scroll + make the rest of the page inert
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    if (mainEl) mainEl.setAttribute('inert', '');
     // force layout, then add .open on a timer so the fade-in transition runs
     // (setTimeout instead of rAF — rAF is throttled when the tab isn't focused)
     void scrim.offsetWidth;
     window.setTimeout(function () {
       mobileMenu.classList.add('open');
       scrim.classList.add('open');
+      // move keyboard focus into the drawer once it's visible/focusable.
+      // (the drawer transitions from visibility:hidden; focus after it flips)
+      window.setTimeout(function () {
+        if (!isOpen()) return;
+        if (menuLinks[0]) menuLinks[0].focus();
+      }, 60);
     }, 10);
   }
   toggle.addEventListener('click', function () {
-    if (toggle.getAttribute('aria-expanded') === 'true') closeMenu();
+    if (isOpen()) closeMenu();
     else openMenu();
   });
-  mobileMenu.querySelectorAll('a').forEach(function (a) {
+  menuLinks.forEach(function (a) {
     a.addEventListener('click', closeMenu);
   });
   scrim.addEventListener('click', closeMenu);
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+    if (!isOpen()) return;
+    if (e.key === 'Escape') {
       closeMenu();
       toggle.focus();
+      return;
+    }
+    if (e.key === 'Tab') {
+      // trap focus within the drawer (toggle + menu links cycle)
+      var focusables = [toggle].concat(menuLinks);
+      var first = focusables[0];
+      var last = focusables[focusables.length - 1];
+      var active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || !mobileMenu.contains(active) && active !== toggle) {
+          e.preventDefault(); last.focus();
+        }
+      } else {
+        if (active === last) { e.preventDefault(); first.focus(); }
+      }
     }
   });
+
+  // Reset drawer + toggle state when crossing the desktop breakpoint.
+  var desktopMq = window.matchMedia('(min-width: 981px)');
+  function onBreakpoint(e) {
+    if (e.matches && isOpen()) {
+      closeMenu();
+    }
+  }
+  if (desktopMq.addEventListener) desktopMq.addEventListener('change', onBreakpoint);
+  else if (desktopMq.addListener) desktopMq.addListener(onBreakpoint);
 
   /* ---- Scroll reveal ---- */
   var revealSelector = '.svc-row, .step, .fact, .rev, .why-lead, .section-head, .g, .estimate-copy, .estimate-form';
